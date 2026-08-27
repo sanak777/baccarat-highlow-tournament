@@ -180,6 +180,16 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
 (function installMultiplayer(){
   clearInterval(tick);running=false;
   const socket=io();
+  const multiplayerChipSound=new Audio('/chip-bet.wav');
+  multiplayerChipSound.preload='auto';
+  multiplayerChipSound.volume=.72;
+  const playMultiplayerChip=()=>{
+    try{
+      multiplayerChipSound.currentTime=0;
+      const playback=multiplayerChipSound.play();
+      if(playback?.catch)playback.catch(()=>{});
+    }catch(e){}
+  };
   let serverState=null,mySession=localStorage.getItem('highlowSession')||'',joined=false,lastNextKey='';
   const seatOrder=[1,2,3,7,8,9,13,14,15,19,20,21,4,5,6,10,11,12,16,17,18,22,23,24];
   const adminEntry=document.createElement('button');adminEntry.className='adminEntry';adminEntry.textContent='ADMIN';document.body.appendChild(adminEntry);
@@ -188,9 +198,10 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
   const emit=(name,data,done)=>socket.emit(name,data||{},r=>{if(!r?.ok)return toast(r?.error||'요청에 실패했습니다');if(done)done(r)});
   adminEntry.onclick=()=>adminPanel.classList.toggle('hide');
   adminPanel.querySelector('#adminLoginBtn').onclick=()=>emit('adminLogin',{password:adminPanel.querySelector('#adminPassword').value},()=>{adminPanel.querySelector('.adminLogin').style.display='none';adminPanel.querySelector('.adminTools').classList.add('show');toast('관리자 로그인 완료')});
-  adminPanel.querySelector('#adminStartBtn').onclick=()=>emit('adminStart');
-  adminPanel.querySelector('#adminRestartBtn').onclick=()=>{if(confirm('좌석은 유지하고 게임을 처음부터 재시작할까요?'))emit('adminRestart')};
-  adminPanel.querySelector('#adminEndBtn').onclick=()=>{if(confirm('모든 참가자를 내보내고 방을 종료할까요?'))emit('adminEnd')};
+  const closeAdminPanel=()=>adminPanel.classList.add('hide');
+  adminPanel.querySelector('#adminStartBtn').onclick=()=>emit('adminStart',{},closeAdminPanel);
+  adminPanel.querySelector('#adminRestartBtn').onclick=()=>{if(confirm('좌석은 유지하고 게임을 처음부터 재시작할까요?'))emit('adminRestart',{},closeAdminPanel)};
+  adminPanel.querySelector('#adminEndBtn').onclick=()=>{if(confirm('모든 참가자를 내보내고 방을 종료할까요?'))emit('adminEnd',{},closeAdminPanel)};
 
   $('#enter').onclick=()=>{const n=$('#nickname').value.trim();if(!n)return toast('닉네임을 입력해주세요');socket.emit('join',{nick:n,sessionId:mySession},r=>{if(!r?.ok)return toast(r?.error||'입장 실패');mySession=r.sessionId;localStorage.setItem('highlowSession',mySession);window.nick=n;joined=true;$('#join').classList.add('hide');toast('테이블 입장 완료 · 빈 좌석을 선택하세요')})};
   $('#nickname').onkeydown=e=>{if(e.key==='Enter')$('#enter').click()};
@@ -201,9 +212,9 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     const mine=serverState.seats.find(p=>p?.sessionId===mySession);if(!mine)return toast('먼저 빈 좌석에 착석해주세요');
     if(mine.bet?.locked)return toast('이미 베팅을 완료했습니다');
     const side=box.dataset.side,currentAmount=mine.bet?.side===side?mine.bet.amount:0;
-    emit('bet',{side,amount:currentAmount+chip});
+    emit('bet',{side,amount:currentAmount+chip},playMultiplayerChip);
   });
-  $('#undo').onclick=()=>emit('undoBet');$('#confirm').onclick=()=>emit('confirmBet');$('#rebet').onclick=()=>emit('rebet');
+  $('#undo').onclick=()=>emit('undoBet');$('#confirm').onclick=()=>emit('confirmBet');$('#rebet').onclick=()=>emit('rebet',{},playMultiplayerChip);
 
   function renderSeats(s){
     const all=document.querySelectorAll('.betSeatZone .seat');
