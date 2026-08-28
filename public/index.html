@@ -146,7 +146,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
   .rankViewport{height:204px!important}.rankEmpty{padding-top:73px!important}
   .controls{top:calc(46% + 270px);bottom:auto;width:min(620px,56%)}
   .chip{width:54px;height:54px}
-  .cardHistory{top:42%!important;height:28px!important}
+  .cardHistory{top:43.2%!important;height:22px!important}
 }
 @media(max-width:700px){
   .arena{height:900px!important;min-height:900px!important}
@@ -215,7 +215,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
       if(playback?.catch)playback.catch(()=>{});
     }catch(e){}
   };
-  let serverState=null,mySession=localStorage.getItem('highlowSession')||'',joined=false,lastNextKey='',lastStreakPayout=0,lastChipRound=0;
+  let serverState=null,mySession=localStorage.getItem('highlowSession')||'',joined=false,lastNextKey='',lastStreakPayout=0;
   const seatOrder=[1,2,3,7,8,9,13,14,15,19,20,21,4,5,6,10,11,12,16,17,18,22,23,24];
   const adminEntry=document.createElement('button');adminEntry.className='adminEntry';adminEntry.textContent='ADMIN';document.body.appendChild(adminEntry);
   const adminPanel=document.createElement('section');adminPanel.className='adminPanel hide';adminPanel.innerHTML='<h3>방장 관리자</h3><div class="adminLogin"><input id="adminPassword" type="password" placeholder="관리자 비밀번호"><button class="btn primary wide" id="adminLoginBtn">로그인</button></div><div class="adminTools"><button class="btn" id="adminStartBtn">게임 시작</button><button class="btn" id="adminRestartBtn">게임 재시작</button><button class="btn danger" id="adminEndBtn">게임 종료 · 방폭</button></div>';document.body.appendChild(adminPanel);
@@ -264,7 +264,6 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     if(s.next&&nextKey!==lastNextKey){showCard($('#next'),s.next);lastNextKey=nextKey}else if(!s.next){$('#next').className='card back';$('#next').innerHTML='';lastNextKey=''}
     const o=s.odds,sameOpen=['2','A'].includes(s.current.r);$('#lowOdds').textContent=o.lo?o.lo.toFixed(2)+'x':'—';$('#highOdds').textContent=o.hi?o.hi.toFixed(2)+'x':'—';ranges();$('.betbox.same').classList.toggle('hidden',!sameOpen);$('.betbox.low').classList.toggle('edgeHidden',s.current.r==='2');$('.betbox.high').classList.toggle('edgeHidden',s.current.r==='A');
     const mine=s.seats.find(p=>p?.sessionId===mySession);pending=mine?.bet?.amount||0;selectedSide=mine?.bet?.side||null;locked=!!mine?.bet?.locked;
-    if(s.phase==='betting'&&s.round!==lastChipRound){lastChipRound=s.round;chip=10000;document.querySelectorAll('.chip').forEach((x,i)=>x.classList.toggle('active',i===0))}
     const chain=!!mine?.streak,betPrefix=chain?'연승 도전 ':'베팅 ';
     $('#lowBet').textContent=betPrefix+fmt(selectedSide==='low'?pending:0);$('#highBet').textContent=betPrefix+fmt(selectedSide==='high'?pending:0);$('#sameBet').textContent=betPrefix+fmt(selectedSide==='same'?pending:0);document.querySelectorAll('.betbox').forEach(x=>x.classList.toggle('selected',x.dataset.side===selectedSide));document.querySelector('.chips').classList.remove('chainLocked');
     const streak=$('#streakInfo'),cashout=$('#rebet');
