@@ -33,7 +33,7 @@ const socketsBySession = new Map();
 const state = {
   phase: 'waiting', round: 1, timer: BET_SECONDS,
   current: null, next: null, resultText: '방장의 게임 시작을 기다리는 중',
-  seats: Array(24).fill(null), roundWinners: [], winner: null
+  seats: Array(24).fill(null), roundWinners: [], winner: null, cardHistory: []
 };
 
 function shuffle(a){
@@ -89,6 +89,8 @@ function revealRound(){
 }
 function settleRound(){
   const next=state.next;
+  state.cardHistory.push(next.r);
+  if(state.cardHistory.length>24)state.cardHistory.shift();
   const same=rank(next)===rank(state.current);
   const winners=[];
   for(const p of state.seats){
@@ -124,7 +126,7 @@ function settleRound(){
   phaseHandle=setTimeout(()=>{state.current=state.next;state.next=null;state.round++;startRound()},7000);
 }
 function initialize(keepSeats=true){
-  clearTimers();freshShoe();state.current=draw();state.next=null;state.round=1;state.timer=BET_SECONDS;state.phase='waiting';state.resultText='방장의 게임 시작을 기다리는 중';state.roundWinners=[];state.winner=null;
+  clearTimers();freshShoe();state.current=draw();state.next=null;state.round=1;state.timer=BET_SECONDS;state.phase='waiting';state.resultText='방장의 게임 시작을 기다리는 중';state.roundWinners=[];state.winner=null;state.cardHistory=[state.current.r];
   if(keepSeats){for(const p of state.seats)if(p){p.money=BUY_IN;p.out=false;p.bet=null;p.lastBet=null;p.streak=null}}
   else {state.seats=Array(24).fill(null);sessions.clear();socketsBySession.clear()}
   broadcast();
@@ -196,5 +198,5 @@ io.on('connection',socket=>{
 
 app.use(express.static(path.join(__dirname,'public')));
 app.get('/health',(_,res)=>res.json({ok:true,phase:state.phase,players:state.seats.filter(Boolean).length}));
-freshShoe();state.current=draw();
+freshShoe();state.current=draw();state.cardHistory=[state.current.r];
 server.listen(PORT,()=>console.log(`HighLow server listening on ${PORT}`));
