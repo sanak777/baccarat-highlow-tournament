@@ -21,7 +21,7 @@ const ODDS = {
 const BUY_IN = 500000;
 const WIN_TARGET = 5000000;
 const ELIMINATION = 9999;
-const BET_SECONDS = 15;
+const BET_SECONDS = 10;
 
 let shoe = [];
 let timerHandle = null;
@@ -33,7 +33,7 @@ const socketsBySession = new Map();
 const state = {
   phase: 'waiting', round: 1, timer: BET_SECONDS,
   current: null, next: null, resultText: '방장의 게임 시작을 기다리는 중',
-  seats: Array(24).fill(null), roundWinners: [], winner: null, cardHistory: []
+  seats: Array(24).fill(null), roundWinners: [], winner: null, cardHistory: [], completedRounds: 0
 };
 
 function shuffle(a){
@@ -63,9 +63,10 @@ function activePlayers(){return state.seats.filter(p=>p&&!p.out)}
 function finishIfWinner(){
   const reached=activePlayers().filter(p=>p.money>=WIN_TARGET).sort((a,b)=>b.money-a.money);
   const alive=activePlayers();
-  const reason=reached.length?'target':alive.length===1&&state.seats.filter(Boolean).length>1?'last':null;
+  const reason=reached.length?'target':alive.length===1&&state.completedRounds>=1?'last':null;
   const champ=reason==='target'?reached[0]:reason==='last'?alive[0]:null;
   if(!champ)return false;
+  if(reason==='last'&&champ.streak)cashoutPlayer(champ,false);
   clearTimers();state.winner={nick:champ.nick,money:Math.round(champ.money),reason};state.phase='ended';state.resultText=reason==='target'?`${champ.nick} 500만원 달성 우승`:`${champ.nick} 최후의 1인 우승`;broadcast();return true;
 }
 function cashoutPlayer(p,automatic=false){
@@ -124,6 +125,7 @@ function settleRound(){
   }
   winners.sort((a,b)=>b.profit-a.profit);
   state.roundWinners=winners;
+  state.completedRounds++;
   state.phase='result';
   state.resultText=same?'같은 숫자':rank(next)>rank(state.current)?'HIGH 승리':'LOW 승리';
   if(finishIfWinner())return;
@@ -131,7 +133,7 @@ function settleRound(){
   phaseHandle=setTimeout(()=>{state.current=state.next;state.next=null;state.round++;startRound()},7000);
 }
 function initialize(keepSeats=true){
-  clearTimers();freshShoe();state.current=draw();state.next=null;state.round=1;state.timer=BET_SECONDS;state.phase='waiting';state.resultText='방장의 게임 시작을 기다리는 중';state.roundWinners=[];state.winner=null;state.cardHistory=[state.current.r];
+  clearTimers();freshShoe();state.current=draw();state.next=null;state.round=1;state.timer=BET_SECONDS;state.phase='waiting';state.resultText='방장의 게임 시작을 기다리는 중';state.roundWinners=[];state.winner=null;state.cardHistory=[state.current.r];state.completedRounds=0;
   if(keepSeats){for(const p of state.seats)if(p){p.money=BUY_IN;p.out=false;p.bet=null;p.lastBet=null;p.streak=null}}
   else {state.seats=Array(24).fill(null);sessions.clear();socketsBySession.clear()}
   broadcast();
