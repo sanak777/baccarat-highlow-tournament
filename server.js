@@ -63,9 +63,10 @@ function activePlayers(){return state.seats.filter(p=>p&&!p.out)}
 function finishIfWinner(){
   const reached=activePlayers().filter(p=>p.money>=WIN_TARGET).sort((a,b)=>b.money-a.money);
   const alive=activePlayers();
-  const champ=reached[0]||(alive.length===1&&state.seats.filter(Boolean).length>1?alive[0]:null);
+  const reason=reached.length?'target':alive.length===1&&state.seats.filter(Boolean).length>1?'last':null;
+  const champ=reason==='target'?reached[0]:reason==='last'?alive[0]:null;
   if(!champ)return false;
-  clearTimers();state.winner={nick:champ.nick,money:Math.round(champ.money)};state.phase='ended';state.resultText=`${champ.nick} 우승`;broadcast();return true;
+  clearTimers();state.winner={nick:champ.nick,money:Math.round(champ.money),reason};state.phase='ended';state.resultText=reason==='target'?`${champ.nick} 500만원 달성 우승`:`${champ.nick} 최후의 1인 우승`;broadcast();return true;
 }
 function cashoutPlayer(p,automatic=false){
   if(!p?.streak)return null;
@@ -202,7 +203,11 @@ io.on('connection',socket=>{
   socket.on('adminStart',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});if(state.phase!=='waiting')return ack({ok:false,error:'대기 상태에서만 시작할 수 있습니다'});startRound();ack({ok:true})});
   socket.on('adminRestart',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});initialize(true);ack({ok:true})});
   socket.on('adminEnd',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});initialize(false);io.emit('roomDestroyed');ack({ok:true})});
-  socket.on('disconnect',()=>{adminSockets.delete(socket.id);const p=sessions.get(socket.data.sessionId);if(p){p.connected=false;socketsBySession.delete(p.sessionId);broadcast()}});
+  socket.on('disconnect',()=>{
+    adminSockets.delete(socket.id);
+    const p=sessions.get(socket.data.sessionId);
+    if(p&&socketsBySession.get(p.sessionId)===socket.id){p.connected=false;socketsBySession.delete(p.sessionId);broadcast()}
+  });
 });
 
 app.use(express.static(path.join(__dirname,'public')));
