@@ -19,7 +19,7 @@ const ODDS = {
   'Q':{hi:6,lo:1.33},'K':{hi:10,lo:1.20},'A':{hi:0,lo:1.05}
 };
 const BUY_IN = 500000;
-const WIN_TARGET = 3000000;
+const WIN_TARGET = 5000000;
 const ELIMINATION = 9999;
 const BET_SECONDS = 15;
 
@@ -60,6 +60,13 @@ function broadcast(){io.emit('state',snapshot())}
 function clearTimers(){clearInterval(timerHandle);clearTimeout(phaseHandle);timerHandle=null;phaseHandle=null}
 function resetBets(){for(const p of state.seats)if(p)p.bet=null}
 function activePlayers(){return state.seats.filter(p=>p&&!p.out)}
+function finishIfWinner(){
+  const reached=activePlayers().filter(p=>p.money>=WIN_TARGET).sort((a,b)=>b.money-a.money);
+  const alive=activePlayers();
+  const champ=reached[0]||(alive.length===1&&state.seats.filter(Boolean).length>1?alive[0]:null);
+  if(!champ)return false;
+  clearTimers();state.winner={nick:champ.nick,money:Math.round(champ.money)};state.phase='ended';state.resultText=`${champ.nick} 우승`;broadcast();return true;
+}
 function cashoutPlayer(p,automatic=false){
   if(!p?.streak)return null;
   const payout=Math.round(p.streak.stake*p.streak.multiplier);
@@ -84,6 +91,7 @@ function revealRound(){
     const row=cashoutPlayer(p,true);if(row)automaticCashouts.push(row);
   }
   if(automaticCashouts.length)state.roundWinners=automaticCashouts.sort((a,b)=>b.profit-a.profit);
+  if(finishIfWinner())return;
   state.phase='revealing';state.timer=0;state.next=draw();state.resultText='카드 오픈 중';broadcast();
   phaseHandle=setTimeout(settleRound,2200);
 }
@@ -117,11 +125,7 @@ function settleRound(){
   state.roundWinners=winners;
   state.phase='result';
   state.resultText=same?'같은 숫자':rank(next)>rank(state.current)?'HIGH 승리':'LOW 승리';
-  const reached=activePlayers().filter(p=>p.money>=WIN_TARGET).sort((a,b)=>b.money-a.money);
-  const alive=activePlayers();
-  if(reached.length||alive.length===1&&state.seats.filter(Boolean).length>1){
-    const champ=reached[0]||alive[0];state.winner={nick:champ.nick,money:Math.round(champ.money)};state.phase='ended';state.resultText=`${champ.nick} 우승`;broadcast();return;
-  }
+  if(finishIfWinner())return;
   broadcast();
   phaseHandle=setTimeout(()=>{state.current=state.next;state.next=null;state.round++;startRound()},7000);
 }
@@ -182,7 +186,7 @@ io.on('connection',socket=>{
     if(!p||!p.streak||state.phase!=='betting')return ack({ok:false,error:'현재 인출할 연승 당첨금이 없습니다'});
     if(p.bet?.locked)return ack({ok:false,error:'베팅 완료 후에는 인출할 수 없습니다'});
     const result=cashoutPlayer(p,false);state.roundWinners=[result];
-    ack({ok:true,payout:result.payout});broadcast();
+    ack({ok:true,payout:result.payout});if(!finishIfWinner())broadcast();
   });
   socket.on('rebet',(_,ack=()=>{})=>{
     const p=sessions.get(socket.data.sessionId);if(!p||!p.lastBet)return ack({ok:false,error:'이전 베팅 내역이 없습니다'});
