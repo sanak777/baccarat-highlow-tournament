@@ -233,8 +233,8 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     if(!serverState||serverState.phase!=='betting')return toast('현재는 베팅 시간이 아닙니다');
     const mine=serverState.seats.find(p=>p?.sessionId===mySession);if(!mine)return toast('먼저 빈 좌석에 착석해주세요');
     if(mine.bet?.locked)return toast('이미 베팅을 완료했습니다');
-    const side=box.dataset.side,currentAmount=mine.bet?.side===side?mine.bet.amount:0;
-    emit('bet',{side,amount:currentAmount+chip},playMultiplayerChip);
+    const side=box.dataset.side;
+    emit('bet',{side,chip},playMultiplayerChip);
   });
   $('#undo').onclick=()=>emit('undoBet');$('#confirm').onclick=()=>emit('confirmBet');
   $('#rebet').onclick=()=>emit('cashout',{},r=>toast(`인출 완료 · ${fmt(r.payout)}`));
@@ -264,7 +264,13 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     const chain=!!mine?.streak,betPrefix=chain?'연승 도전 ':'베팅 ';
     $('#lowBet').textContent=betPrefix+fmt(selectedSide==='low'?pending:0);$('#highBet').textContent=betPrefix+fmt(selectedSide==='high'?pending:0);$('#sameBet').textContent=betPrefix+fmt(selectedSide==='same'?pending:0);document.querySelectorAll('.betbox').forEach(x=>x.classList.toggle('selected',x.dataset.side===selectedSide));document.querySelector('.chips').classList.toggle('chainLocked',chain);
     const streak=$('#streakInfo'),cashout=$('#rebet');
-    if(mine?.streak){lastStreakPayout=mine.streak.payout;streak.classList.remove('hide');streak.textContent=`연승 ${mine.streak.wins}회 · 누적 ${mine.streak.multiplier.toFixed(3)}x · 인출 ${fmt(mine.streak.payout)}`;cashout.disabled=s.phase!=='betting'||!!mine.bet?.locked}
+    if(mine?.streak){
+      lastStreakPayout=mine.streak.payout;streak.classList.remove('hide');
+      const side=s.phase==='betting'?mine.bet?.side:null,roundMult=side==='same'?10:side==='low'?s.odds.lo:side==='high'?s.odds.hi:0;
+      if(side&&roundMult){const nextMult=mine.streak.multiplier*roundMult,nextPayout=Math.round(mine.streak.stake*nextMult);streak.textContent=`연승 ${mine.streak.wins}회 · ${mine.streak.multiplier.toFixed(3)}x × ${roundMult.toFixed(2)}x = 적중 시 ${nextMult.toFixed(3)}x · ${fmt(nextPayout)}`}
+      else streak.textContent=`연승 ${mine.streak.wins}회 · 누적 ${mine.streak.multiplier.toFixed(3)}x · 지금 인출 ${fmt(mine.streak.payout)}`;
+      cashout.disabled=s.phase!=='betting'||!!mine.bet?.locked
+    }
     else {if(lastStreakPayout&&s.phase==='revealing')toast(`15초 미선택 · ${fmt(lastStreakPayout)} 자동 인출`);lastStreakPayout=0;streak.classList.add('hide');cashout.disabled=true}
     waiting.classList.toggle('hide',s.phase!=='waiting');if(s.phase==='waiting')waiting.textContent=s.resultText;
     renderSeats(s);renderRanking(s.roundWinners);
