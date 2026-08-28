@@ -149,18 +149,23 @@ io.on('connection',socket=>{
     if(p.seat!==null&&state.seats[p.seat]===p)state.seats[p.seat]=null;
     p.seat=seat;state.seats[seat]=p;ack({ok:true});broadcast();
   });
-  socket.on('bet',({side,amount},ack=()=>{})=>{
-    const p=sessions.get(socket.data.sessionId);amount=Math.round(Number(amount));
+  socket.on('bet',({side,amount,chip},ack=()=>{})=>{
+    const p=sessions.get(socket.data.sessionId);amount=Math.round(Number(amount));chip=Math.round(Number(chip));
     if(!p||p.seat===null||state.phase!=='betting')return ack({ok:false,error:'현재 베팅할 수 없습니다'});
     if(p.out)return ack({ok:false,error:'탈락한 참가자입니다'});
+    if(p.bet?.locked)return ack({ok:false,error:'이미 베팅을 완료했습니다'});
     if(!['low','high','same'].includes(side))return ack({ok:false,error:'잘못된 베팅입니다'});
     if(side==='same'&&!['2','A'].includes(state.current.r))return ack({ok:false,error:'SAME은 2 또는 A에서만 가능합니다'});
     if((side==='low'&&!ODDS[state.current.r].lo)||(side==='high'&&!ODDS[state.current.r].hi))return ack({ok:false,error:'선택할 수 없는 방향입니다'});
     if(p.streak){
       p.bet={side,amount:p.streak.stake,locked:false,continuation:true};ack({ok:true});return broadcast();
     }
-    if(!Number.isFinite(amount)||amount<10000||amount%10000!==0||amount>p.money)return ack({ok:false,error:'베팅 금액을 확인해주세요'});
-    p.bet={side,amount,locked:false,continuation:false};ack({ok:true});broadcast();
+    if(p.bet&&p.bet.side!==side)return ack({ok:false,error:'서로 다른 선택지에 동시에 베팅할 수 없습니다'});
+    let total;
+    if(Number.isFinite(chip)&&[10000,30000,50000,100000,200000,300000].includes(chip))total=(p.bet?.amount||0)+chip;
+    else total=amount;
+    if(!Number.isFinite(total)||total<10000||total%10000!==0||total>p.money)return ack({ok:false,error:'베팅 금액을 확인해주세요'});
+    p.bet={side,amount:total,locked:false,continuation:false};ack({ok:true,amount:total});broadcast();
   });
   socket.on('confirmBet',(_,ack=()=>{})=>{
     const p=sessions.get(socket.data.sessionId);
