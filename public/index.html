@@ -220,7 +220,8 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
 (function installMultiplayer(){
   clearInterval(tick);running=false;
   document.querySelector('.status').innerHTML='바이인 500,000원 · 우승 5,000,000원<br><b>● LIVE TOURNAMENT TABLE</b>';
-  document.querySelector('#rules .rules').innerHTML=document.querySelector('#rules .rules').innerHTML.replace('3,000,000원','5,000,000원').replace('⑥ 적중 후 계속 도전하면 매 라운드 배당이','⑥ 적중 후에는 최초 베팅금이 고정되며 추가로 돈을 넣을 수 없습니다. 연승할 때마다 배당이');
+  document.querySelector('#rules .rules').innerHTML=document.querySelector('#rules .rules').innerHTML.replace('3,000,000원','5,000,000원').replace('⑥ 적중 후 계속 도전하면 매 라운드 배당이','⑥ 적중 후에는 최초 베팅금이 고정되며 추가로 돈을 넣을 수 없습니다. 연승할 때마다 배당이').replaceAll('15초','10초');
+  $('#timer').textContent='10';
   const socket=io();
   const multiplayerChipSound=new Audio('/chip-bet.wav');
   multiplayerChipSound.preload='auto';
@@ -301,7 +302,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
       else streak.textContent=`연승 ${mine.streak.wins}회 · 누적 ${mine.streak.multiplier.toFixed(3)}x · 지금 인출 ${fmt(mine.streak.payout)}`;
       cashout.disabled=s.phase!=='betting'||!!mine.bet?.locked
     }
-    else {if(lastStreakPayout&&s.phase==='revealing')toast(`15초 미선택 · ${fmt(lastStreakPayout)} 자동 인출`);lastStreakPayout=0;streak.classList.add('hide');cashout.disabled=true}
+    else {if(lastStreakPayout&&s.phase==='revealing')toast(`10초 미선택 · ${fmt(lastStreakPayout)} 자동 인출`);lastStreakPayout=0;streak.classList.add('hide');cashout.disabled=true}
     waiting.classList.toggle('hide',s.phase!=='waiting');if(s.phase==='waiting')waiting.textContent=s.resultText;
     renderSeats(s);renderRanking(s.roundWinners);
     if(s.winner){
