@@ -237,7 +237,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     const mine=serverState.seats.find(p=>p?.sessionId===mySession);if(!mine)return toast('먼저 빈 좌석에 착석해주세요');
     if(mine.bet?.locked)return toast('이미 베팅을 완료했습니다');
     const side=box.dataset.side;
-    emit('bet',{side,chip},playMultiplayerChip);
+    emit('bet',{side,chip},mine.streak?undefined:playMultiplayerChip);
   });
   $('#undo').onclick=()=>emit('undoBet');$('#confirm').onclick=()=>emit('confirmBet');
   $('#rebet').onclick=()=>emit('cashout',{},r=>toast(`인출 완료 · ${fmt(r.payout)}`));
@@ -264,8 +264,17 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     if(s.next&&nextKey!==lastNextKey){showCard($('#next'),s.next);lastNextKey=nextKey}else if(!s.next){$('#next').className='card back';$('#next').innerHTML='';lastNextKey=''}
     const o=s.odds,sameOpen=['2','A'].includes(s.current.r);$('#lowOdds').textContent=o.lo?o.lo.toFixed(2)+'x':'—';$('#highOdds').textContent=o.hi?o.hi.toFixed(2)+'x':'—';ranges();$('.betbox.same').classList.toggle('hidden',!sameOpen);$('.betbox.low').classList.toggle('edgeHidden',s.current.r==='2');$('.betbox.high').classList.toggle('edgeHidden',s.current.r==='A');
     const mine=s.seats.find(p=>p?.sessionId===mySession);pending=mine?.bet?.amount||0;selectedSide=mine?.bet?.side||null;locked=!!mine?.bet?.locked;
-    const chain=!!mine?.streak,betPrefix=chain?'연승 도전 ':'베팅 ';
-    $('#lowBet').textContent=betPrefix+fmt(selectedSide==='low'?pending:0);$('#highBet').textContent=betPrefix+fmt(selectedSide==='high'?pending:0);$('#sameBet').textContent=betPrefix+fmt(selectedSide==='same'?pending:0);document.querySelectorAll('.betbox').forEach(x=>x.classList.toggle('selected',x.dataset.side===selectedSide));document.querySelector('.chips').classList.toggle('chainLocked',chain);
+    const chain=!!mine?.streak;
+    if(chain){
+      $('#lowBet').textContent=selectedSide==='low'?'✓ 선택 완료':'선택';
+      $('#highBet').textContent=selectedSide==='high'?'✓ 선택 완료':'선택';
+      $('#sameBet').textContent=selectedSide==='same'?'✓ 선택 완료':'선택';
+    }else{
+      $('#lowBet').textContent='베팅 '+fmt(selectedSide==='low'?pending:0);
+      $('#highBet').textContent='베팅 '+fmt(selectedSide==='high'?pending:0);
+      $('#sameBet').textContent='베팅 '+fmt(selectedSide==='same'?pending:0);
+    }
+    document.querySelectorAll('.betbox').forEach(x=>x.classList.toggle('selected',x.dataset.side===selectedSide));document.querySelector('.chips').classList.toggle('chainLocked',chain);
     const streak=$('#streakInfo'),cashout=$('#rebet');
     if(mine?.streak){
       lastStreakPayout=mine.streak.payout;streak.classList.remove('hide');
