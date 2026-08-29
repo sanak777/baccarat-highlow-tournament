@@ -204,8 +204,22 @@ io.on('connection',socket=>{
   socket.on('adminLogin',({password},ack=()=>{})=>{
     if(String(password)===ADMIN_PASSWORD){adminSockets.add(socket.id);socket.data.admin=true;ack({ok:true})}else ack({ok:false,error:'관리자 비밀번호가 올바르지 않습니다'});
   });
+  socket.on('adminKick',({seat},ack=()=>{})=>{
+    if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});
+    seat=Number(seat);
+    if(!Number.isInteger(seat)||seat<0||seat>23)return ack({ok:false,error:'잘못된 좌석입니다'});
+    const p=state.seats[seat];
+    if(!p)return ack({ok:false,error:'비어 있는 좌석입니다'});
+    state.seats[seat]=null;p.seat=null;p.bet=null;p.streak=null;
+    const playerSocketId=socketsBySession.get(p.sessionId);
+    if(playerSocketId)io.to(playerSocketId).emit('kicked',{reason:'관리자에 의해 좌석에서 추방되었습니다'});
+    socketsBySession.delete(p.sessionId);sessions.delete(p.sessionId);
+    ack({ok:true,nick:p.nick});
+    if(state.phase!=='waiting'&&state.phase!=='ended'&&finishIfWinner())return;
+    broadcast();
+  });
   socket.on('adminStart',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});if(state.phase!=='waiting')return ack({ok:false,error:'대기 상태에서만 시작할 수 있습니다'});if(!activePlayers().length)return ack({ok:false,error:'착석한 참가자가 없습니다'});state.seatingOpen=false;startRound();ack({ok:true})});
-  socket.on('adminRestart',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});initialize(true);ack({ok:true})});
+  socket.on('adminRestart',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});initialize(true);if(activePlayers().length)startRound();ack({ok:true})});
   socket.on('adminEnd',(_,ack=()=>{})=>{if(!socket.data.admin)return ack({ok:false,error:'관리자 권한이 없습니다'});initialize(false);io.emit('roomDestroyed');ack({ok:true})});
   socket.on('disconnect',()=>{
     adminSockets.delete(socket.id);
