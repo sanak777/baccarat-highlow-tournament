@@ -8,6 +8,6 @@ services:
     healthCheckPath: /health
     envVars:
       - key: ADMIN_PASSWORD
-        value: "8959"
+        sync: false
       - key: NODE_ENV
         value: production
