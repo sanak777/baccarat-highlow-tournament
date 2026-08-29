@@ -211,6 +211,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
 </style>
 <style>
 .adminEntry{position:fixed;z-index:45;right:22px;top:82px;bottom:auto;border:1px solid #a9853d;background:#071318ee;color:#e8c56b;border-radius:20px;padding:8px 15px;font-size:11px;font-weight:900;box-shadow:0 5px 16px #0009}.adminPanel{position:fixed;z-index:70;right:22px;top:122px;width:min(330px,calc(100% - 32px));padding:16px;border:1px solid #b98d3f;border-radius:14px;background:#051015f7;box-shadow:0 12px 40px #000}.adminPanel.hide{display:none}.adminPanel h3{margin:0 0 12px;color:#edcc70;text-align:center}.adminPanel input{width:100%;padding:11px;border:1px solid #80662e;border-radius:8px;background:#02080b;color:#fff;text-align:center}.adminTools{display:none;grid-template-columns:1fr 1fr;gap:8px}.adminTools.show{display:grid}.adminTools .btn{width:100%;min-height:40px}.adminTools .danger{grid-column:1/-1;border-color:#b43c47;background:#3b1015}.waitingBadge{position:absolute;z-index:20;left:50%;top:48%;transform:translateX(-50%);padding:9px 18px;border:1px solid #d1ac55;border-radius:20px;background:#031116dd;color:#f0cf72;font-size:12px;font-weight:900}.waitingBadge.hide{display:none}.seat.disconnected{opacity:.55}.seat.disconnected .avatar{border-color:#e35f62!important}.rankTrack.static{animation:none}
+.betSeatZone .seat.baccaratSeat.locked{opacity:.58;filter:grayscale(.35);cursor:not-allowed}.betSeatZone .seat.baccaratSeat.locked .avatar{border-style:solid;color:#81775f}.betSeatZone .seat.baccaratSeat.locked .money{color:#a9b0ad}
 @media(max-width:700px){.adminEntry{top:55px;right:8px;bottom:auto;font-size:9px;padding:6px 11px}.adminPanel{top:96px;right:auto;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:330px;padding:15px}.adminTools.show{grid-template-columns:1fr}.adminTools .danger{grid-column:auto}.adminTools .btn{min-height:42px}.waitingBadge{top:50%;font-size:9px;padding:7px 12px}}
 .winnerOverlay{position:fixed;z-index:65;inset:0;display:grid;place-items:center;padding:18px;background:#010609d9;backdrop-filter:blur(4px)}.winnerOverlay.hide{display:none}.winnerCard{width:min(430px,100%);padding:27px 20px 21px;text-align:center;border:2px solid #e5c568;border-radius:22px;background:radial-gradient(circle at 50% 0,#29534b,#07161b 58%,#03090c);box-shadow:0 0 0 5px #16110a,0 0 45px #e6c25b55,0 24px 70px #000}.winnerCrown{font-size:42px;filter:drop-shadow(0 4px 5px #000)}.winnerReason{margin-top:7px;color:#ffe58e;font-size:23px;font-weight:1000}.winnerNick{margin-top:12px;color:#fff;font-size:28px;font-weight:1000}.winnerMoney{margin-top:7px;color:#79ffc0;font-size:16px;font-weight:900}.winnerClose{margin-top:20px;min-width:130px}.winnerCard.last{border-color:#72e7ff;box-shadow:0 0 0 5px #07151a,0 0 45px #43dcff55,0 24px 70px #000}.winnerCard.last .winnerReason{color:#8feeff}
 @media(max-width:700px){.winnerCard{padding:23px 15px 18px}.winnerCrown{font-size:36px}.winnerReason{font-size:19px}.winnerNick{font-size:24px}.winnerMoney{font-size:14px}}
@@ -220,7 +221,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
 (function installMultiplayer(){
   clearInterval(tick);running=false;
   document.querySelector('.status').innerHTML='바이인 500,000원 · 우승 5,000,000원<br><b>● LIVE TOURNAMENT TABLE</b>';
-  document.querySelector('#rules .rules').innerHTML=document.querySelector('#rules .rules').innerHTML.replace('3,000,000원','5,000,000원').replace('⑥ 적중 후 계속 도전하면 매 라운드 배당이','⑥ 적중 후에는 최초 베팅금이 고정되며 추가로 돈을 넣을 수 없습니다. 연승할 때마다 배당이').replaceAll('15초','10초');
+  document.querySelector('#rules .rules').innerHTML=document.querySelector('#rules .rules').innerHTML.replace('3,000,000원','5,000,000원').replace('⑥ 적중 후 계속 도전하면 매 라운드 배당이','⑥ 적중 후에는 최초 베팅금이 고정되며 추가로 돈을 넣을 수 없습니다. 연승할 때마다 배당이').replaceAll('15초','10초')+'<br>⑪ 게임 시작 후에는 <b>중간 참여 및 신규 착석이 불가</b>합니다. 한 번 선택한 좌석은 게임 종료(방폭) 전까지 이동할 수 없으며, 재접속 시 기존 좌석으로 복귀합니다.';
   $('#timer').textContent='10';
   const socket=io();
   const multiplayerChipSound=new Audio('/chip-bet.wav');
@@ -263,9 +264,16 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
 
   function renderSeats(s){
     const all=document.querySelectorAll('.betSeatZone .seat');
+    const mine=s.seats.find(p=>p?.sessionId===mySession);
     all.forEach((el,index)=>{
       const seatNo=seatOrder[index],p=s.seats[seatNo-1];el.dataset.seat=seatNo-1;
-      if(!p){el.className='seat empty baccaratSeat';el.innerHTML=`<div class="avatar">${seatNo}</div><div class="name">빈 자리</div><div class="money">착석</div>`;el.onclick=()=>{if(!joined&&!mySession)return toast('먼저 닉네임으로 입장해주세요');emit('sit',{seat:seatNo-1})}}
+      if(!p){
+        const closed=s.phase!=='waiting'||!s.seatingOpen;
+        const fixed=!!mine;
+        el.className='seat empty baccaratSeat'+(closed||fixed?' locked':'');
+        el.innerHTML=`<div class="avatar">${seatNo}</div><div class="name">${closed?'참가 마감':'빈 자리'}</div><div class="money">${closed?'관전 전용':fixed?'이동 불가':'착석'}</div>`;
+        el.onclick=()=>{if(!joined&&!mySession)return toast('먼저 닉네임으로 입장해주세요');if(closed)return toast('게임 시작 후에는 중간 참여 및 착석이 불가합니다');if(fixed)return toast('한 번 정한 좌석은 이동할 수 없습니다');emit('sit',{seat:seatNo-1})}
+      }
       else {el.className='seat baccaratSeat'+(p.sessionId===mySession?' me':'')+(p.out?' out':'')+(p.connected?'':' disconnected');el.innerHTML=`<div class="avatar">${seatNo}</div><div class="name">${escapeHtml(p.nick)}</div><div class="money">${p.out?'탈락':fmt(p.money)}</div>`;el.onclick=null}
     });
   }
