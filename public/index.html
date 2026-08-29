@@ -234,7 +234,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
       if(playback?.catch)playback.catch(()=>{});
     }catch(e){}
   };
-  let serverState=null,mySession=localStorage.getItem('highlowSession')||'',joined=false,lastNextKey='',lastStreakPayout=0,winnerKey='';
+  let serverState=null,mySession=localStorage.getItem('highlowSession')||'',joined=false,lastNextKey='',lastStreakPayout=0,winnerKey='',adminAuthorized=false;
   const seatOrder=[1,2,3,7,8,9,13,14,15,19,20,21,4,5,6,10,11,12,16,17,18,22,23,24];
   const adminEntry=document.createElement('button');adminEntry.className='adminEntry';adminEntry.textContent='ADMIN';document.body.appendChild(adminEntry);
   const adminPanel=document.createElement('section');adminPanel.className='adminPanel hide';adminPanel.innerHTML='<h3>방장 관리자</h3><div class="adminLogin"><input id="adminPassword" type="password" placeholder="관리자 비밀번호"><button class="btn primary wide" id="adminLoginBtn">로그인</button></div><div class="adminTools"><button class="btn" id="adminStartBtn">게임 시작</button><button class="btn" id="adminRestartBtn">게임 재시작</button><button class="btn danger" id="adminEndBtn">게임 종료 · 방폭</button></div>';document.body.appendChild(adminPanel);
@@ -242,7 +242,7 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
   const winnerOverlay=document.createElement('div');winnerOverlay.className='winnerOverlay hide';winnerOverlay.innerHTML='<section class="winnerCard"><div class="winnerCrown">♛</div><div class="winnerReason"></div><div class="winnerNick"></div><div class="winnerMoney"></div><button class="btn primary winnerClose">확인</button></section>';document.body.appendChild(winnerOverlay);winnerOverlay.querySelector('.winnerClose').onclick=()=>winnerOverlay.classList.add('hide');
   const emit=(name,data,done)=>socket.emit(name,data||{},r=>{if(!r?.ok)return toast(r?.error||'요청에 실패했습니다');if(done)done(r)});
   adminEntry.onclick=()=>adminPanel.classList.toggle('hide');
-  adminPanel.querySelector('#adminLoginBtn').onclick=()=>emit('adminLogin',{password:adminPanel.querySelector('#adminPassword').value},()=>{adminPanel.querySelector('.adminLogin').style.display='none';adminPanel.querySelector('.adminTools').classList.add('show');toast('관리자 로그인 완료')});
+  adminPanel.querySelector('#adminLoginBtn').onclick=()=>emit('adminLogin',{password:adminPanel.querySelector('#adminPassword').value},()=>{adminAuthorized=true;adminPanel.querySelector('.adminLogin').style.display='none';adminPanel.querySelector('.adminTools').classList.add('show');toast('관리자 로그인 완료 · 참가자 좌석을 누르면 추방할 수 있습니다')});
   const closeAdminPanel=()=>adminPanel.classList.add('hide');
   adminPanel.querySelector('#adminStartBtn').onclick=()=>emit('adminStart',{},closeAdminPanel);
   adminPanel.querySelector('#adminRestartBtn').onclick=()=>{if(confirm('좌석은 유지하고 게임을 처음부터 재시작할까요?'))emit('adminRestart',{},closeAdminPanel)};
@@ -274,7 +274,11 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
         el.innerHTML=`<div class="avatar">${seatNo}</div><div class="name">${closed?'참가 마감':'빈 자리'}</div><div class="money">${closed?'관전 전용':fixed?'이동 불가':'착석'}</div>`;
         el.onclick=()=>{if(!joined&&!mySession)return toast('먼저 닉네임으로 입장해주세요');if(closed)return toast('게임 시작 후에는 중간 참여 및 착석이 불가합니다');if(fixed)return toast('한 번 정한 좌석은 이동할 수 없습니다');emit('sit',{seat:seatNo-1})}
       }
-      else {el.className='seat baccaratSeat'+(p.sessionId===mySession?' me':'')+(p.out?' out':'')+(p.connected?'':' disconnected');el.innerHTML=`<div class="avatar">${seatNo}</div><div class="name">${escapeHtml(p.nick)}</div><div class="money">${p.out?'탈락':fmt(p.money)}</div>`;el.onclick=null}
+      else {
+        el.className='seat baccaratSeat'+(p.sessionId===mySession?' me':'')+(p.out?' out':'')+(p.connected?'':' disconnected');
+        el.innerHTML=`<div class="avatar">${seatNo}</div><div class="name">${escapeHtml(p.nick)}</div><div class="money">${p.out?'탈락':fmt(p.money)}</div>`;
+        el.onclick=adminAuthorized?()=>{const status=p.connected?'접속 중':'오프라인';if(confirm(`${seatNo}번 ${p.nick} (${status}) 참가자를 추방할까요?`))emit('adminKick',{seat:seatNo-1},r=>toast(`${r.nick} 참가자를 추방했습니다`))}:null
+      }
     });
   }
   function renderRanking(rows){
@@ -325,6 +329,11 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     $('#join').classList.add('hide');$('#rules').classList.remove('hide');
     adminPanel.classList.add('hide');
     toast('관리자가 게임을 종료했습니다 · 인트로 화면으로 이동합니다');
+  });
+  socket.on('kicked',data=>{
+    localStorage.removeItem('highlowSession');mySession='';joined=false;window.nick='';
+    $('#nickname').value='';$('#join').classList.add('hide');$('#rules').classList.remove('hide');
+    toast(data?.reason||'관리자에 의해 추방되었습니다');
   });
   socket.on('connect',()=>{if(mySession&&window.nick)socket.emit('join',{nick:window.nick,sessionId:mySession},r=>{if(r?.ok)joined=true})});
 })();
