@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { transports: ['websocket', 'polling'] });
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'change-me';
+const ADMIN_PASSWORD = '8959';
 
 const RANKS = ['2','3','4','5','6','7','8','9','J','Q','K','A'];
 const SUITS = ['♠','♥','♦','♣'];
