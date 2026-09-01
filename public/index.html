@@ -212,6 +212,8 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
 <style>
 .adminEntry{position:fixed;z-index:45;right:22px;top:82px;bottom:auto;border:1px solid #a9853d;background:#071318ee;color:#e8c56b;border-radius:20px;padding:8px 15px;font-size:11px;font-weight:900;box-shadow:0 5px 16px #0009}.adminPanel{position:fixed;z-index:70;right:22px;top:122px;width:min(330px,calc(100% - 32px));padding:16px;border:1px solid #b98d3f;border-radius:14px;background:#051015f7;box-shadow:0 12px 40px #000}.adminPanel.hide{display:none}.adminPanel h3{margin:0 0 12px;color:#edcc70;text-align:center}.adminPanel input{width:100%;padding:11px;border:1px solid #80662e;border-radius:8px;background:#02080b;color:#fff;text-align:center}.adminTools{display:none;grid-template-columns:1fr 1fr;gap:8px}.adminTools.show{display:grid}.adminTools .btn{width:100%;min-height:40px}.adminTools .danger{grid-column:1/-1;border-color:#b43c47;background:#3b1015}.waitingBadge{position:absolute;z-index:20;left:50%;top:48%;transform:translateX(-50%);padding:9px 18px;border:1px solid #d1ac55;border-radius:20px;background:#031116dd;color:#f0cf72;font-size:12px;font-weight:900}.waitingBadge.hide{display:none}.seat.disconnected{opacity:.55}.seat.disconnected .avatar{border-color:#e35f62!important}.rankTrack.static{animation:none}
 .betSeatZone .seat.baccaratSeat.locked{opacity:.58;filter:grayscale(.35);cursor:not-allowed}.betSeatZone .seat.baccaratSeat.locked .avatar{border-style:solid;color:#81775f}.betSeatZone .seat.baccaratSeat.locked .money{color:#a9b0ad}
+.betbox{padding-bottom:45px!important}.tableChipStack{position:absolute;z-index:5;left:50%;bottom:6px;transform:translateX(-50%);height:33px;min-width:34px;display:flex;align-items:flex-end;justify-content:center;padding-right:3px;pointer-events:none}.tableChipStack:empty{display:none}.tableChip{--mini-chip:#666;position:relative;flex:0 0 31px;width:31px;height:31px;margin-left:-9px;border-radius:50%;display:grid;place-items:center;background:repeating-conic-gradient(from -5deg,#e4dfd1 0deg 9deg,var(--mini-chip) 9deg 28deg);box-shadow:0 0 0 2px #141719,0 3px 5px #000b,inset 0 0 0 3px #ffffff30;animation:chipLand .24s ease-out both}.tableChip:first-child{margin-left:0}.tableChip:before{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 38% 30%,color-mix(in srgb,var(--mini-chip) 72%,white),var(--mini-chip) 60%,#111 100%);border:1px solid #ddd8c780}.tableChip b{position:relative;z-index:2;color:#fff3cf;font-size:6px;font-weight:1000;text-shadow:0 1px 2px #000}.tableChip.c10000{--mini-chip:#9a4f2d}.tableChip.c30000{--mini-chip:#71305f}.tableChip.c50000{--mini-chip:#297c85}.tableChip.c100000{--mini-chip:#542c30}.tableChip.c200000{--mini-chip:#303b58}.tableChip.c300000{--mini-chip:#376247}.tableChipMore{position:relative;z-index:8;margin-left:-7px;margin-bottom:17px;padding:1px 4px;border-radius:7px;background:#05090ce8;border:1px solid #e4bd58;color:#ffe69b;font-size:7px;font-weight:900;white-space:nowrap}@keyframes chipLand{from{opacity:0;transform:translateY(-25px) scale(.72) rotate(-18deg)}to{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@media(max-width:700px){.betbox{padding-bottom:39px!important}.tableChipStack{bottom:4px;height:29px}.tableChip{flex-basis:27px;width:27px;height:27px;margin-left:-8px}.tableChip:before{inset:5px}.tableChip b{font-size:5.5px}}
 @media(max-width:700px){.adminEntry{top:55px;right:8px;bottom:auto;font-size:9px;padding:6px 11px}.adminPanel{top:96px;right:auto;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:330px;padding:15px}.adminTools.show{grid-template-columns:1fr}.adminTools .danger{grid-column:auto}.adminTools .btn{min-height:42px}.waitingBadge{top:50%;font-size:9px;padding:7px 12px}}
 .winnerOverlay{position:fixed;z-index:65;inset:0;display:grid;place-items:center;padding:18px;background:#010609d9;backdrop-filter:blur(4px)}.winnerOverlay.hide{display:none}.winnerCard{width:min(430px,100%);padding:27px 20px 21px;text-align:center;border:2px solid #e5c568;border-radius:22px;background:radial-gradient(circle at 50% 0,#29534b,#07161b 58%,#03090c);box-shadow:0 0 0 5px #16110a,0 0 45px #e6c25b55,0 24px 70px #000}.winnerCrown{font-size:42px;filter:drop-shadow(0 4px 5px #000)}.winnerReason{margin-top:7px;color:#ffe58e;font-size:23px;font-weight:1000}.winnerNick{margin-top:12px;color:#fff;font-size:28px;font-weight:1000}.winnerMoney{margin-top:7px;color:#79ffc0;font-size:16px;font-weight:900}.winnerClose{margin-top:20px;min-width:130px}.winnerCard.last{border-color:#72e7ff;box-shadow:0 0 0 5px #07151a,0 0 45px #43dcff55,0 24px 70px #000}.winnerCard.last .winnerReason{color:#8feeff}
 @media(max-width:700px){.winnerCard{padding:23px 15px 18px}.winnerCrown{font-size:36px}.winnerReason{font-size:19px}.winnerNick{font-size:24px}.winnerMoney{font-size:14px}}
@@ -235,6 +237,8 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     }catch(e){}
   };
   let serverState=null,mySession=localStorage.getItem('highlowSession')||'',joined=false,lastNextKey='',lastStreakPayout=0,winnerKey='',adminAuthorized=false;
+  const chipLabels={10000:'1만',30000:'3만',50000:'5만',100000:'10만',200000:'20만',300000:'30만'};
+  ['low','high','same'].forEach(side=>{const stack=document.createElement('div');stack.className='tableChipStack';stack.id=`${side}ChipStack`;document.querySelector(`.betbox.${side}`)?.appendChild(stack)});
   const seatOrder=[1,2,3,7,8,9,13,14,15,19,20,21,4,5,6,10,11,12,16,17,18,22,23,24];
   const adminEntry=document.createElement('button');adminEntry.className='adminEntry';adminEntry.textContent='ADMIN';document.body.appendChild(adminEntry);
   const adminPanel=document.createElement('section');adminPanel.className='adminPanel hide';adminPanel.innerHTML='<h3>방장 관리자</h3><div class="adminLogin"><input id="adminPassword" type="password" placeholder="관리자 비밀번호"><button class="btn primary wide" id="adminLoginBtn">로그인</button></div><div class="adminTools"><button class="btn" id="adminStartBtn">게임 시작</button><button class="btn" id="adminRestartBtn">게임 재시작</button><button class="btn danger" id="adminEndBtn">게임 종료 · 방폭</button></div>';document.body.appendChild(adminPanel);
@@ -286,6 +290,14 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
     if(!rows?.length){viewport.innerHTML='<div class="rankEmpty">첫 당첨자를 기다리는 중</div>';return}
     viewport.innerHTML='<div class="rankTrack static">'+rows.slice(0,10).map((r,i)=>`<div class="rankRow"><b>${i+1}</b><span>${escapeHtml(r.nick)}</span><span class="prize">+${fmt(r.profit)}</span></div>`).join('')+'</div>';
   }
+  function renderBetChips(side,chips){
+    const stack=document.getElementById(`${side}ChipStack`);if(!stack)return;
+    const values=(chips||[]).map(Number).filter(v=>chipLabels[v]);
+    const key=values.join(',');if(stack.dataset.key===key)return;stack.dataset.key=key;
+    if(!values.length){stack.innerHTML='';return}
+    const visible=values.slice(-8),hidden=Math.max(0,values.length-visible.length);
+    stack.innerHTML=visible.map(v=>`<span class="tableChip c${v}"><b>${chipLabels[v]}</b></span>`).join('')+(hidden?`<span class="tableChipMore">+${hidden}</span>`:'');
+  }
   function render(s){
     serverState=s;current=s.current;money=s.seats.find(p=>p?.sessionId===mySession)?.money||500000;round=s.round;timer=s.timer;
     $('#round').textContent=s.round;$('#timer').textContent=s.timer;$('#message').textContent=s.resultText;
@@ -305,6 +317,9 @@ $('#rebet').onclick=()=>{if(me===null)return toast('먼저 좌석에 착석해�
       $('#highBet').textContent='베팅 '+fmt(selectedSide==='high'?pending:0);
       $('#sameBet').textContent='베팅 '+fmt(selectedSide==='same'?pending:0);
     }
+    renderBetChips('low',selectedSide==='low'?mine?.bet?.chips:[]);
+    renderBetChips('high',selectedSide==='high'?mine?.bet?.chips:[]);
+    renderBetChips('same',selectedSide==='same'?mine?.bet?.chips:[]);
     document.querySelectorAll('.betbox').forEach(x=>x.classList.toggle('selected',x.dataset.side===selectedSide));document.querySelector('.chips').classList.toggle('chainLocked',chain);
     const streak=$('#streakInfo'),cashout=$('#rebet');
     if(mine?.streak){
