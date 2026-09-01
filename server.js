@@ -22,6 +22,7 @@ const BUY_IN = 500000;
 const WIN_TARGET = 5000000;
 const ELIMINATION = 9999;
 const BET_SECONDS = 10;
+const CHIP_VALUES = [10000,30000,50000,100000,200000,300000];
 
 let shoe = [];
 let timerHandle = null;
@@ -48,11 +49,16 @@ function freshShoe(){
 }
 function draw(){if(shoe.length<32)freshShoe();return shoe.pop()}
 function rank(card){return RANKS.indexOf(card.r)}
+function chipBreakdown(amount){
+  const chips=[];let rest=Math.max(0,Math.round(Number(amount)||0));
+  for(const value of [...CHIP_VALUES].sort((a,b)=>b-a))while(rest>=value){chips.push(value);rest-=value}
+  return chips;
+}
 function publicPlayer(p){
   if(!p)return null;
   return {sessionId:p.sessionId,nick:p.nick,money:Math.round(p.money),connected:p.connected,out:p.out,
-    bet:p.bet&&{side:p.bet.side,amount:p.bet.amount,locked:p.bet.locked,continuation:!!p.bet.continuation},
-    streak:p.streak&&{stake:p.streak.stake,multiplier:p.streak.multiplier,wins:p.streak.wins,payout:Math.round(p.streak.stake*p.streak.multiplier)}};
+    bet:p.bet&&{side:p.bet.side,amount:p.bet.amount,chips:[...(p.bet.chips||[])],locked:p.bet.locked,continuation:!!p.bet.continuation},
+    streak:p.streak&&{stake:p.streak.stake,chips:[...(p.streak.chips||[])],multiplier:p.streak.multiplier,wins:p.streak.wins,payout:Math.round(p.streak.stake*p.streak.multiplier)}};
 }
 function snapshot(){
   return {...state,seats:state.seats.map(publicPlayer),odds:ODDS[state.current.r],shoeRemaining:shoe.length,serverTime:Date.now()};
@@ -107,7 +113,7 @@ function settleRound(){
   for(const p of state.seats){
     if(!p||p.out||!p.bet)continue;
     const {side,amount,continuation}=p.bet;
-    p.lastBet={side,amount};
+    p.lastBet={side,amount,chips:[...(p.bet.chips||chipBreakdown(amount))]};
     const sameBet=side==='same';
     const win=sameBet?same:!same&&((side==='low'&&rank(next)<rank(state.current))||(side==='high'&&rank(next)>rank(state.current)));
     const push=!sameBet&&same;
@@ -116,7 +122,7 @@ function settleRound(){
       if(continuation&&p.streak)winners.push({nick:p.nick,profit:Math.round(p.streak.stake*(p.streak.multiplier-1)),payout:Math.round(p.streak.stake*p.streak.multiplier),push:true});
     }else if(win){
       if(continuation&&p.streak){p.streak.multiplier*=mult;p.streak.wins++}
-      else {p.money-=amount;p.streak={stake:amount,multiplier:mult,wins:1}}
+      else {p.money-=amount;p.streak={stake:amount,chips:[...(p.bet.chips||chipBreakdown(amount))],multiplier:mult,wins:1}}
       winners.push({nick:p.nick,profit:Math.round(p.streak.stake*(p.streak.multiplier-1)),payout:Math.round(p.streak.stake*p.streak.multiplier),multiplier:p.streak.multiplier});
     }else{
       if(continuation&&p.streak)p.streak=null;
@@ -167,14 +173,16 @@ io.on('connection',socket=>{
     if(side==='same'&&!['2','A'].includes(state.current.r))return ack({ok:false,error:'SAME은 2 또는 A에서만 가능합니다'});
     if((side==='low'&&!ODDS[state.current.r].lo)||(side==='high'&&!ODDS[state.current.r].hi))return ack({ok:false,error:'선택할 수 없는 방향입니다'});
     if(p.streak){
-      p.bet={side,amount:p.streak.stake,locked:false,continuation:true};ack({ok:true,amount:p.streak.stake});return broadcast();
+      p.bet={side,amount:p.streak.stake,chips:[...(p.streak.chips||chipBreakdown(p.streak.stake))],locked:false,continuation:true};ack({ok:true,amount:p.streak.stake});return broadcast();
     }
     if(p.bet&&p.bet.side!==side)return ack({ok:false,error:'서로 다른 선택지에 동시에 베팅할 수 없습니다'});
     let total;
-    if(Number.isFinite(chip)&&[10000,30000,50000,100000,200000,300000].includes(chip))total=(p.bet?.amount||0)+chip;
+    const validChip=Number.isFinite(chip)&&CHIP_VALUES.includes(chip);
+    if(validChip)total=(p.bet?.amount||0)+chip;
     else total=amount;
     if(!Number.isFinite(total)||total<10000||total%10000!==0||total>p.money)return ack({ok:false,error:'베팅 금액을 확인해주세요'});
-    p.bet={side,amount:total,locked:false,continuation:false};ack({ok:true,amount:total});broadcast();
+    const chips=validChip?[...(p.bet?.chips||[]),chip]:chipBreakdown(total);
+    p.bet={side,amount:total,chips,locked:false,continuation:false};ack({ok:true,amount:total});broadcast();
   });
   socket.on('confirmBet',(_,ack=()=>{})=>{
     const p=sessions.get(socket.data.sessionId);
@@ -195,11 +203,11 @@ io.on('connection',socket=>{
   });
   socket.on('rebet',(_,ack=()=>{})=>{
     const p=sessions.get(socket.data.sessionId);if(!p||!p.lastBet)return ack({ok:false,error:'이전 베팅 내역이 없습니다'});
-    const {side,amount}=p.lastBet;
+    const {side,amount,chips}=p.lastBet;
     if(state.phase!=='betting'||amount>p.money)return ack({ok:false,error:'현재 이전 베팅을 적용할 수 없습니다'});
     if(side==='same'&&!['2','A'].includes(state.current.r))return ack({ok:false,error:'이번 카드에서는 SAME을 적용할 수 없습니다'});
     if((side==='low'&&!ODDS[state.current.r].lo)||(side==='high'&&!ODDS[state.current.r].hi))return ack({ok:false,error:'이번 카드에서는 이전 방향을 적용할 수 없습니다'});
-    p.bet={side,amount,locked:false};ack({ok:true});broadcast();
+    p.bet={side,amount,chips:[...(chips||chipBreakdown(amount))],locked:false};ack({ok:true});broadcast();
   });
   socket.on('adminLogin',({password},ack=()=>{})=>{
     if(String(password)===ADMIN_PASSWORD){adminSockets.add(socket.id);socket.data.admin=true;ack({ok:true})}else ack({ok:false,error:'관리자 비밀번호가 올바르지 않습니다'});
